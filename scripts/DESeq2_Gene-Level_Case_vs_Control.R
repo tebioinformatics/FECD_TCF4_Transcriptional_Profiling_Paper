@@ -53,7 +53,7 @@ dds <- DESeqDataSetFromTximport(txi, sampleTable,
 
 # Wald test (2-group comparison)
 dds_wt <- DESeq(dds)
-res_wt <- results(dds_wt, contrast=c("condition", "case","control")) # Specify the order of subtraction for log2FoldChange
+res_wt <- results(dds_wt, contrast=c("condition", "case","ctr")) # Specify the order of subtraction for log2FoldChange
 dim(res_wt)
 
 summary(res_wt)
