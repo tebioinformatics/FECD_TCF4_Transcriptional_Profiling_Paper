@@ -13,7 +13,7 @@ This repository contains the analysis pipeline for transcriptional profiling of 
 | `DESeq2_gene_analysis.R` | Main script for differential gene expression analysis |
 | `Sample_List_YYYYMMDD.txt` | Sample information file |
 | `DataMatrix_YYYYMMDD.txt` | Gene expression data matrix obtained by RSEM|
-| `DESeq2_Result_YYYYMMDD.txt` | Results of differential expression analysis |
+| `DESeq2_Result_of_WaldTest_Case_vs_Control.txt` | Results of differential expression analysis |
 
 ---
 
