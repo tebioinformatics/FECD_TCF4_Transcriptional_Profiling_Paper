@@ -1,22 +1,20 @@
-### Human RNA-seq
+### Heatmap
 
 # Clear all previous data
 rm(list=ls())
 
-##################### Load read data
-## Load the database
-#DU2022
-path <- "/Users/shara/Library/CloudStorage/DESeq2/DU2022_QC4_v104/gene_RE-_vs_RE+_20240829AT"
+## Load read data
+path <- "path/to/your/working/directory"
 setwd(path)
 
-Filename01　<- "DataMatrix_ImportSampleList_RE-_vs_RE+_20240821AT.txt"
+Filename01　<- "DataMatrix_ImportSampleList_Case_vs_Control.txt"
 list <- read.table(Filename01, header=T, sep="\t", stringsAsFactors=F)
 dim(list)
 head(list)
-abundance <- list[,1:10]
+abundance <- list[,1:10] # In this case, sample number was 10
 head(abundance,3)
 
-Filename02　<- "Import_Sample_List_RE-_vs_RE+_20240821AT.txt"
+Filename02　<- "Import_Sample_List_Case_vs_Control.txt"
 SAMPLE_list <- read.table(Filename02, header=T, sep="\t", stringsAsFactors=F)
 colnames(abundance) <- SAMPLE_list$sample
 head(abundance,3)
@@ -28,7 +26,7 @@ packageVersion("genefilter")
 f1 <- kOverA(10, A=1)       
 ffun <- filterfun(f1)        
 obj <- genefilter(abundance, ffun)
-obj           
+obj # Check the data
 abundance.over1 <- abundance[obj,]  
 dim(abundance.over1)               
 
