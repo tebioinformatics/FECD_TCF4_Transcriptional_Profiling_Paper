@@ -1,18 +1,20 @@
-### Creation Date: 2024-08-29
+### Principal Component Analysis (PCA)
 
+# Clear all previous data
+rm(list=ls()) 
 
-rm(list=ls()) # Clear all previous data
-############### Installing the Heatplus package (only for the first time) 
+# Installing the Heatplus package (only for the first time) 
 #install.packages("maptools")
 #install.packages("scatterplot3d")
 
-############### Font settings
+# Font settings
 par(family="sans")  # Set graph font to Times New Roman; serif is Times New Roman, sans is Arial
 par(pty="s")  # Make the plot square-shaped
 
-############### Loading read data
-path <- "/Users/shara/Library/CloudStorage/DESeq2/DU2022_QC4_v104/gene_RE-_vs_RE+_20240829AT"
-setwd(path)  # 作業ディレクトリを変更する
+
+## Loading read data
+path <- "path/to/your/working/directory"
+setwd(path)
 
 # TPM
 FileName2 <- "DataMatrix_ImportSampleList_RE-_vs_RE+_20240821AT.txt"
@@ -33,7 +35,7 @@ TPM.over1 <- TPM[obj,]  # Store the elements that are TRUE in obj in the data
 dim(TPM.over1)  # Check
 
 
-### Extract data from the data_matrix
+## Extract data from the data_matrix
 TPM.DEGs <- TPM.over1
 dim(TPM.DEGs)
 head(TPM.DEGs)
@@ -45,21 +47,19 @@ sample_list<- read.table(FileName3, sep = "\t", header = T)
 colnames(TPM.DEGs) <- sample_list$sample
 head(TPM.DEGs)
 
-############### PCA (2 groups) using the prcomp function
+## PCA (2 groups) using the prcomp function
 TPM.DEGs.log10 <- log10(TPM.DEGs + 1) # Log transformation
 
 # PCA calculation
 pcaobj <- prcomp(t(TPM.DEGs.log10),  # Transpose to make cohorts vertical and genes horizontal
                  scale = FALSE)  # Set scale to FALSE as the units are aligned
 
-
 # Proportion of Variance (axis contribution)
 summary(pcaobj)$importance
 
-# PCA plot (two-dimensional) (PC1, 2)
+# PCA plot (two-dimensional) (PC1, PC2)
 PC1 <- pcaobj$x[, 1]
 PC2 <- pcaobj$x[, 2]
-
 
 x.1 <- data.frame(PC1 = c(PC1), PC2 = c(PC2))
 
@@ -80,9 +80,8 @@ kiyo2 <- signif(summary(pcaobj)$importance[2,2]*100, 3)
 PC1.lab <- paste("PC1  ", "(", kiyo1, "%)", sep = "")
 PC2.lab <- paste("PC2  ", "(", kiyo2, "%)", sep = "")
 
-packageVersion("ggplot2")
 
-# Plot the graph
+## Plot the graph
 library(ggplot2)
 ggplot(x.2 , aes(x = PC1, y = PC2, group = Group, fill = Group))+
   theme_linedraw()+
@@ -100,8 +99,7 @@ ggplot(x.2 , aes(x = PC1, y = PC2, group = Group, fill = Group))+
   theme(panel.border = element_rect(colour = "black", fill = NA, size = 1.0), # Black border around the plot area.
         panel.grid = element_line(size=1.0, colour = "black", linetype = "dashed"), # dotted, solid, blank, dashed
         aspect.ratio = 1.0, # アスペクト比)
-        text = element_text(size = 17)
-  )+
+        text = element_text(size = 17) )+
   
   xlim(-20,20)+
   ylim(-20,20)
