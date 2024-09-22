@@ -1,14 +1,10 @@
-### 作成日:20221213
-### CorrelationMatrix_RE-_vs_RE+_20221213TN.R
-
+### CorrelationMatrix
 
 # 今までのデータ削除
 rm(list=ls())
 
 ##################### リードデータの読み込み
-##データベース読み込み
-#学校PC用
-path <- "/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/DESeq2/DU2022_QC4_v104/gene_RE-_vs_RE+_20240829AT"
+path <- "path/to/your/working/directory"
 setwd(path)
 
 
@@ -41,7 +37,8 @@ data2 <- log10(data1 + 1)
 dim(data2)
 
 
-data3 <- cor(data2, method="spearman") #相関係数を計算
+# Calculate correlation coefficients
+data3 <- cor(data2, method="spearman")
 round(data3, digits=2)
 
 
@@ -67,5 +64,4 @@ corrplot(data3,
          tl.srt=45,
          #mar = c(0, 0, 0, 0),
          col.lim = c(-1,1) #カラースケールの範囲
-         
-)
+        )
