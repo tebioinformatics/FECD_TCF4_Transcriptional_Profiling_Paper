@@ -17,6 +17,20 @@ This repository contains the analysis pipeline for transcriptional profiling of 
 
 ---
 
+## Example of File Format
+# Sample_List_YYYYMMDD.txt
+
+|  sample  | group |  RIN  | path |
+|----------|-------|-------|------|
+| `Case1`  | case  | 6.3   | /path/to/your/directry |
+| `Case2`  | case  | 8.0   | /path/to/your/directry |
+| `Case3`  | case  | 7.3   | /path/to/your/directry |
+| `Control1` | ctr | 7.4   | /path/to/your/directry |
+| `Control2` | ctr | 8.0   | /path/to/your/directry |
+| `Control3` | ctr | 7.2   | /path/to/your/directry |
+
+---
+
 ## Requirements
 
 - R version X.X.X

@@ -1,7 +1,5 @@
-# 2024/08/29
 # Differential gene expression testing from expression data using DESeq2
 # Remove all previous data
-
 
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #install.packages("BiocManager")
@@ -15,13 +13,12 @@
 #biocLite("DESeq2")
 #library("DESeq2")
 
-
 #source ("http://bioconductor.org/biocLite.R")
 
 #BiocManager::install("tximport")
 
 rm(list=ls())
-##############################################################################################
+###
 
 path <- "path/to/your/working/directory"
 setwd(path)
@@ -56,7 +53,7 @@ dds <- DESeqDataSetFromTximport(txi, sampleTable,
 
 # Wald test (2-group comparison)
 dds_wt <- DESeq(dds)
-res_wt <- results(dds_wt, contrast=c("condition", "nex","control")) # Specify the order of subtraction for log2FoldChange
+res_wt <- results(dds_wt, contrast=c("condition", "case","control")) # Specify the order of subtraction for log2FoldChange
 dim(res_wt)
 
 summary(res_wt)
