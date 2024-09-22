@@ -1,18 +1,15 @@
-### Created on: 20240829
 ### Volcano Plot
 
 rm(list=ls()) 
 #dev.off() # Close the window if there is any issue
 
-
-##################### Read data
+### Read data
 ## Read Database
-path <- "/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/DESeq2/DU2022_QC4_v104/gene_RE-_vs_Control_20240829AT"
+path <- "path/to/your/working/directry/"
 setwd(path) 
 
-
 # Result of DESeq2
-FileName <- "DESeq2_Result_of_WaldTest_RE-_vs_Control_20240829AT.txt"
+FileName <- "DESeq2_Result_of_WaldTest_Case_vs_Control.txt"
 data1 <- read.table(FileName, header=T, sep="\t", stringsAsFactors=F)
 data2 <- cbind(padj = data1$padj, log2FoldChange = data1$log2FoldChange)
 rownames(data2) <- rownames(data1)
@@ -25,14 +22,14 @@ head(data3,3)
 
 
 # Expression level data
-path.tpm <- "/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/DESeq2/DU2022_QC4_v104/gene_FECD_vs_Control_20240912AT"
+path.tpm <- "path/to/your/working/directry/"
 setwd(path.tpm)
 
-FileName.tpm <- "DataMatrix_ImportSampleList_FECD_vs_Control_20240912AT.txt"  #ファイル名を入力
+FileName.tpm <- "DataMatrix_ImportSampleList_Case_vs_Control.txt"  # Input file name
 data1.tpm <- read.table(FileName.tpm, header=T, sep="\t", stringsAsFactors=F)
 head(data1.tpm,3)
 
-data2.tpm <- data1.tpm[,1:17]
+data2.tpm <- data1.tpm[,1:17] # In this case, sample number was 17
 dim(data2.tpm)
 head(data2.tpm,3)
 
@@ -45,8 +42,8 @@ data.list <- data3[rownames(data3) %in% rownames(data3.tpm),]
 dim(data.list)
 
 
-############################################################
-#### Apply conditions based on LFC and P.adjust
+###
+# Apply conditions based on LFC and P.adjust
 nrow(data.list)
 
 group <- as.numeric(matrix(1:nrow(data.list), nrow = nrow(data.list), ncol=1))
@@ -80,7 +77,8 @@ nrow(data4[data4$group == "A", ])
 nrow(data4[data4$group == "B", ])
 nrow(data4[data4$group == "C", ])
 
-######## Drawing the Volcano Plot #################################
+
+### Drawing the Volcano Plot
 library(ggplot2) # library
 library(reshape2)
 library(ggrepel)
@@ -88,25 +86,22 @@ packageVersion("ggplot2")
 packageVersion("reshape2")
 packageVersion("ggrepel")
 
+# Set x&y axis labels
+x.lab = expression(paste("",{Log[2]}," ","Fold Change", sep=""))  #X-axis label
+y.lab = expression(paste("-",{Log[10]}," ","(p.adjust)", sep="")) #y-axis label
 
-x.lab = expression(paste("",{Log[2]}," ","Fold Change", sep="")) #x軸ラベル
-y.lab = expression(paste("-",{Log[10]}," ","(p.adjust)", sep="")) #y軸ラベル
-
-
+# Check the dataset
 max(data4$padj)
 min(data4$padj)
 max(data4$log2FoldChange)
 min(data4$log2FoldChange)
 
-
+# Define plot style
 plot <- ggplot(data4, aes(x = log2FoldChange, y = padj, color = group, fill = group)) + # Define data frame to be used for plotting; define data for x and y axes; crate a scatterplot object.
         #geom_point() +
         geom_point(size = 3.1, shape = 21) + # Define data point style.
-        
-        ggtitle("DU2022v104 RE- vs Control") + # Define title and subtitle.
-        
+        ggtitle("VolcanoPlot_Case_vs_Control") + # Define title and subtitle.
         labs(x = x.lab, y = y.lab) + # Define labels for x and y axes.
-        
         scale_x_continuous(limits = c(-30, 30), breaks = seq(-30, 30, by = 10)) + # Define x limits, add ticks.
         scale_y_continuous(limits = c(0,15), breaks = seq(0, 15, by = 5)) + # Define y limits, add ticks.
         
@@ -135,15 +130,17 @@ plot <- ggplot(data4, aes(x = log2FoldChange, y = padj, color = group, fill = gr
         scale_colour_manual(values = c("A" = "gray29","B" = "darkred","C" = "blue")) +
         scale_fill_manual(values = c("A" = "gray54","B" = "red","C" = "dodgerblue2"))
 
+# Output Volcano Plot
 plot
 
-setwd("/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/Noexpansion vs Expansion/論文用 RE- vs+/v104/DU2022/ボルケーノプロット/新")
+# Set to figure saving directry
+setwd("path/to/your/working/directry")
 
-ggsave(filename = "DU2022 RE- vs Control.png", 
+# Save Volcano Plot figure
+ggsave(filename = "VolcanoPlot_Case_vs_Control.png", 
        plot = plot, 
        device = "png", 
        scale = 1, 
        width = 4, height = 4.5, 
        units = c("in"),
        dpi = 900)
-
