@@ -62,5 +62,5 @@ res_wt_naomit <- na.omit(res_wt) # Remove missing values
 dim(res_wt_naomit)
 
 # Write out data
-output_file <- "DESeq2_Result_YYYYMMDD.txt"
+output_file <- "DESeq2_Result_of_WaldTest_Case_vs_Control.txt"
 write.table(res_wt_naomit, file=output_file, sep="\t", quote=F)
