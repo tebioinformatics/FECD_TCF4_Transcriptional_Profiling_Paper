@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository contains the analysis pipeline for transcriptional profiling of patients with Fuchs endothelial corneal dystrophy (FECD), comparing those with and without trinucleotide repeat expansion in the TCF4 gene.
+This repository contains the analysis pipeline for transcriptional profiling of corneal endothelial cells obtained from patients with Fuchs endothelial corneal dystrophy (FECD), comparing those with and without trinucleotide repeat expansion in the TCF4 gene.
 
 ---
 
@@ -12,7 +12,7 @@ This repository contains the analysis pipeline for transcriptional profiling of 
 |------|-------------|
 | `DESeq2_gene_analysis.R` | Main script for differential gene expression analysis |
 | `Sample_List_YYYYMMDD.txt` | Sample information file |
-| `DataMatrix_YYYYMMDD.txt` | Gene expression data matrix obtained by RSEM|
+| `DataMatrix_YYYYMMDD.txt` | Gene expression data matrix |
 | `DESeq2_Result_of_WaldTest_Case_vs_Control.txt` | Results of differential expression analysis |
 
 ---
@@ -68,8 +68,8 @@ If you use this code or data, please cite our paper:
 
 For questions or issues, please contact:
 
-**[Your Name]**  
-Email: [Your Email]
+**Tatsuya Nakagawa**  
+Email: tatsuya.n.nakagawa@gmail.com
 
 ---
 
