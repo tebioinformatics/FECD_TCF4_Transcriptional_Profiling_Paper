@@ -33,7 +33,7 @@ This repository contains the analysis pipeline for transcriptional profiling of 
 
 ## Requirements
 
-- R version X.X.X
+- R version 4.3.2
 - DESeq2 package
 - tximport package
 
