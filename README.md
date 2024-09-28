@@ -1,4 +1,5 @@
-# Transcriptional Profiling in Fuchs Endothelial Corneal Dystrophy
+# Transcriptional profiling of patients with Fuchs endothelial corneal dystrophy with and without trinucleotide repeat expansion in TCF4
+
 
 ## Overview
 
@@ -48,9 +49,9 @@ This repository contains the analysis pipeline for transcriptional profiling of 
 
 ---
 
-## Data
+## Acquisition of RNA-Seq Data
 
-The raw data used in this analysis is available at [GEO accession number]
+Raw fastq files of CECs derived from non-FECD and FECD subjects were obtained from the DNA Data Bank of Japan (DDBJ) Sequence Read Archive (SRA) under the accession IDs [DRP006678] and [DRA015078], respectively.
 
 ---
 
@@ -70,9 +71,3 @@ For questions or issues, please contact:
 
 **Tatsuya Nakagawa**  
 Email: tatsuya.n.nakagawa@gmail.com
-
----
-
-## License
-
-This project is licensed under the [License Name] - see the [LICENSE.md](LICENSE.md) file for details.
