@@ -1,13 +1,11 @@
-#### Created on: 20240130
-### GO analysis
-### RE- vs Control
+# GO enrichment analysis
 
 rm(list=ls()) # Clear all previous data
 dev.off() # Close windows if there are any issues
 
 ##################### Load the data
 ## Load the database
-path <- "/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/DESeq2/DU2022_QC4_v104/gene_RE-_vs_Control_20240829AT"
+path <- "/Users"
 
 setwd(path)      # Change the working directory
 FileName <- "DESeq2_Result_of_WaldTest_RE-_vs_Control_20240829AT.txt"  # Specify the file name
@@ -25,7 +23,7 @@ dim(data2)
 
 ########## Extract differentially expressed genes ############
 # Expression level data
-path.tpm <- "/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/DESeq2/DU2022_QC4_v104/gene_FECD_vs_Control_20240912AT"
+path.tpm <- "/Users/"
 setwd(path.tpm)
 
 FileName.tpm <- "DataMatrix_ImportSampleList_FECD_vs_Control_20240912AT.txt"  
