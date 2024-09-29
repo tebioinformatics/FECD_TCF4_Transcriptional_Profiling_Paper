@@ -1,105 +1,96 @@
 ### Principal Component Analysis (PCA)
+# This script performs a PCA analysis using TPM (transcripts per million) expression data and visualizes the result.
 
 # Clear all previous data
-rm(list=ls()) 
+rm(list=ls())
 
-# Installing the Heatplus package (only for the first time) 
-#install.packages("maptools")
-#install.packages("scatterplot3d")
+# Set the working directory (replace with your actual path)
+working_directory <- "path/to/your/working/directory"
+setwd(working_directory)
 
-# Font settings
-par(family="sans")  # Set graph font to Times New Roman; serif is Times New Roman, sans is Arial
-par(pty="s")  # Make the plot square-shaped
+# Load required libraries
+library(genefilter)  # For filtering genes based on expression levels
+library(ggplot2)     # For creating plots
 
+# Load expression data (TPM: Transcripts Per Million)
+tpm_file <- "DataMatrix_ImportSampleList_Case_vs_Control.txt" #(For exaple, 4 RE- and 6 RE+ in this case)
+tpm_data <- read.table(tpm_file, sep = "\t", header = TRUE)
 
-## Loading read data
-path <- "path/to/your/working/directory"
-setwd(path)
+# Extract TPM data (first 10 columns as gene expression levels for the samples)
+tpm_matrix <- tpm_data[, 1:10]
+head(tpm_matrix)
+dim(tpm_matrix)
 
-# TPM
-FileName2 <- "DataMatrix_ImportSampleList_RE-_vs_RE+_20240821AT.txt"
-Data_matrix0 <- read.table(FileName2, sep = "\t", header = T)
-TPM <- Data_matrix0[,c(1:10)]
-head(TPM)
-dim(TPM)
-colnames(TPM)
+# Filter genes with TPM >= 1 in all samples
+filter_condition <- kOverA(10, A = 1)  # Filter for genes with TPM >= 1 in 10 or more samples
+filter_function <- filterfun(filter_condition)  # Create a filtering function
+filtered_genes <- genefilter(tpm_matrix, filter_function)  # Apply filter to extract genes that meet the condition
+filtered_tpm <- tpm_matrix[filtered_genes, ]  # Filtered TPM data
 
-# Extract genes that meet the condition of TPM being 1 or higher in all samples
-library(genefilter)
-packageVersion("genefilter")
-f1 <- kOverA(10, A=1)  # Set the condition (filter) to extract genes that have a TPM of 1 or more in over 11 samples, store it in f1
-ffun <- filterfun(f1)  # Create a filtering function and store it in ffun
-obj <- genefilter(TPM, ffun)  # Judge whether the condition is met, store the result in obj
-obj  # Check
-TPM.over1 <- TPM[obj,]  # Store the elements that are TRUE in obj in the data
-dim(TPM.over1)  # Check
+# Check dimensions after filtering
+dim(filtered_tpm)
+head(filtered_tpm)
 
+# Load the sample information list (metadata for the samples)
+sample_list_file <- "Sample_List_YYYYMMDD.txt"
+sample_list <- read.table(sample_list_file, sep = "\t", header = TRUE)
 
-## Extract data from the data_matrix
-TPM.DEGs <- TPM.over1
-dim(TPM.DEGs)
-head(TPM.DEGs)
+# Set column names for TPM data to sample names from the sample list
+colnames(filtered_tpm) <- sample_list$sample
+head(filtered_tpm)
 
+### PCA Calculation
+# Apply log10 transformation to TPM data
+log_tpm <- log10(filtered_tpm + 1)
 
-FileName3 <- "Import_Sample_List_RE-_vs_RE+_20240821AT.txt"
-sample_list<- read.table(FileName3, sep = "\t", header = T)
+# Perform PCA (Principal Component Analysis)
+pca_result <- prcomp(t(log_tpm), scale = FALSE)  # Transpose the matrix for PCA; genes are in rows, samples in columns
 
-colnames(TPM.DEGs) <- sample_list$sample
-head(TPM.DEGs)
+# Check the proportion of variance explained by the first two principal components
+summary(pca_result)$importance
 
-## PCA (2 groups) using the prcomp function
-TPM.DEGs.log10 <- log10(TPM.DEGs + 1) # Log transformation
+# Extract the first two principal components (PC1 and PC2)
+pc1_values <- pca_result$x[, 1]
+pc2_values <- pca_result$x[, 2]
 
-# PCA calculation
-pcaobj <- prcomp(t(TPM.DEGs.log10),  # Transpose to make cohorts vertical and genes horizontal
-                 scale = FALSE)  # Set scale to FALSE as the units are aligned
+# Create a data frame for PCA plot
+pca_data <- data.frame(PC1 = pc1_values, PC2 = pc2_values)
+sample_groups <- c(rep("RE-", 4), rep("RE+", 6))  # Adjust based on your actual grouping (4 RE-, 6 RE+ in this case)
+sample_names <- colnames(log_tpm)
+pca_data <- cbind(Sample = sample_names, pca_data, Group = sample_groups)
 
-# Proportion of Variance (axis contribution)
-summary(pcaobj)$importance
+# Calculate percentage variance for PC1 and PC2
+variance_pc1 <- signif(summary(pca_result)$importance[2, 1] * 100, 3)
+variance_pc2 <- signif(summary(pca_result)$importance[2, 2] * 100, 3)
 
-# PCA plot (two-dimensional) (PC1, PC2)
-PC1 <- pcaobj$x[, 1]
-PC2 <- pcaobj$x[, 2]
+# Labels for PC axes with percentage variance
+pc1_label <- paste("PC1 (", variance_pc1, "%)", sep = "")
+pc2_label <- paste("PC2 (", variance_pc2, "%)", sep = "")
 
-x.1 <- data.frame(PC1 = c(PC1), PC2 = c(PC2))
+### PCA Plot
+pca_plot <- ggplot(pca_data, aes(x = PC1, y = PC2, group = Group, fill = Group)) +
+  theme_linedraw() +  # Simple theme with lines
+  labs(x = pc1_label, y = pc2_label) +  # Axis labels
+  geom_text(aes(label = Sample), vjust = -1, size = 5) +  # Sample names as labels on the plot
+  geom_point(aes(shape = Group), size = 7, stroke = 0.8) +  # Points for each sample, differentiated by shape
+  scale_shape_manual(values = c("RE-" = 23, "RE+" = 21)) +  # Shape for groups
+  scale_fill_manual(values = c("#67A9CF", "#EF8A62")) +  # Colors for groups
+  theme(
+    panel.border = element_rect(colour = "black", fill = NA, size = 1.0),  # Black border around the plot
+    panel.grid = element_line(size = 1.0, colour = "black", linetype = "dashed"),  # Grid lines
+    aspect.ratio = 1.0,  # Aspect ratio of the plot
+    text = element_text(size = 17)  # Font size for labels
+  ) +
+  xlim(-20, 20) +  # Adjust x-axis limits
+  ylim(-20, 20)  # Adjust y-axis limits
 
-Nex <- matrix(1:4, nrow=4, ncol=1)
-Nex[,1] <- "RE-"
-Ex <- matrix(1:6, nrow=6, ncol=1)
-Ex[,1] <- "RE+"
-Group <- rbind(Nex, Ex)
+# Display the plot
+print(pca_plot)
 
-Sample <- rownames(x.1)
-x.2 <- cbind(Sample, x.1, Group)
-head(x.2)
-
-# Axis labels for contribution rate
-kiyo1 <- signif(summary(pcaobj)$importance[2,1]*100, 3)
-kiyo2 <- signif(summary(pcaobj)$importance[2,2]*100, 3)
-
-PC1.lab <- paste("PC1  ", "(", kiyo1, "%)", sep = "")
-PC2.lab <- paste("PC2  ", "(", kiyo2, "%)", sep = "")
-
-
-## Plot the graph
-library(ggplot2)
-ggplot(x.2 , aes(x = PC1, y = PC2, group = Group, fill = Group))+
-  theme_linedraw()+
-  
-  labs(x=PC1.lab)+
-  labs(y=PC2.lab)+
-  
-  geom_text(aes(label = Sample), vjust = -1, size = 5)+
-
-  geom_point(aes(shape = Group), size = 7, stroke = 0.8)+
-
-  scale_shape_manual(values = c("RE-"=23,"RE+"=21))+
-  scale_fill_manual(values = c("#67A9CF", "#EF8A62"))+
-  
-  theme(panel.border = element_rect(colour = "black", fill = NA, size = 1.0), # Black border around the plot area.
-        panel.grid = element_line(size=1.0, colour = "black", linetype = "dashed"), # dotted, solid, blank, dashed
-        aspect.ratio = 1.0, # アスペクト比)
-        text = element_text(size = 17) )+
-  
-  xlim(-20,20)+
-  ylim(-20,20)
+# Optionally save the plot as a PNG file
+ggsave(filename = "PCA_Plot_RE-_vs_RE+.png", 
+       plot = pca_plot, 
+       device = "png", 
+       width = 6, height = 6, 
+       units = "in", 
+       dpi = 300)
