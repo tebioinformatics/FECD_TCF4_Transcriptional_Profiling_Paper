@@ -1,32 +1,26 @@
 # Differential gene expression testing from expression data using DESeq2
-# Remove all previous data
+# This script performs differential expression analysis on RNA-Seq data using the DESeq2 package
 
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#install.packages("BiocManager")
-#BiocManager::install()
-
-#if (!requireNamespace("BiocManager", quietly = TRUE))
-#install.packages("BiocManager")
-#BiocManager::install("DESeq2")
-
-#source ("http://bioconductor.org/biocLite.R")
-#biocLite("DESeq2")
-#library("DESeq2")
-
-#source ("http://bioconductor.org/biocLite.R")
-
-#BiocManager::install("tximport")
-
+# Clear all objects from the environment to ensure a fresh start
 rm(list=ls())
-###
 
-path <- "path/to/your/working/directory"
-setwd(path)
+# Set the working directory (please adjust the path as necessary)
+working_directory <- "path/to/your/working/directory"
+setwd(working_directory)
 
-library(DESeq2)
-library(tximport)
+# Load required libraries
+# If DESeq2 or tximport are not installed, uncomment and run the following lines:
+# if (!requireNamespace("BiocManager", quietly = TRUE))
+#     install.packages("BiocManager")
+# BiocManager::install("DESeq2")
+# BiocManager::install("tximport")
+
+library(DESeq2)   # For differential expression analysis
+library(tximport) # For importing transcript-level estimates from different quantification tools
+
 
 # Load the list containing sample information
+# The file should contain columns for sample paths, sample names, conditions, and any other metadata such as RIN
 sample_info_file <- "Sample_List_YYYYMMDD.txt"
 s2c <- read.table(sample_info_file, header=T, sep="\t", stringsAsFactors=F)
 files <- s2c$path
@@ -42,25 +36,28 @@ write.table(txi, file=output_matrix_file, sep="\t", quote=F)
 txi$length[txi$length==0] <- 1
 sampleTable <- data.frame(condition=s2c$group,RIN=s2c$RIN)
 rownames(sampleTable) <- colnames(txi$counts)
+
 # Explicitly specify factor type
-sampleTable$condition <- as.factor(sampleTable$condition) # Explicitly specify factor type
+sampleTable$condition <- as.factor(sampleTable$condition)
 
-
+# Create a DESeq2 dataset from the tximport object and sample table
+# The design formula accounts for the effects of RNA quality (RIN) and experimental condition
 dds <- DESeqDataSetFromTximport(txi, sampleTable,
                                 design = ~ RIN + condition)
 
-
-
-# Wald test (2-group comparison)
+# Perform differential expression analysis using the Wald test (2-group comparison)
+# Here, we compare "case" vs. "control" (ctr). Adjust the contrast as necessary for your study.
 dds_wt <- DESeq(dds)
 res_wt <- results(dds_wt, contrast=c("condition", "case","ctr")) # Specify the order of subtraction for log2FoldChange
 dim(res_wt)
 
+# Summarize the results of the Wald test
 summary(res_wt)
 
-res_wt_naomit <- na.omit(res_wt) # Remove missing values
+# Remove rows with missing values (NA) from the results
+res_wt_naomit <- na.omit(res_wt)
 dim(res_wt_naomit)
 
-# Write out data
+# Save the filtered results to a file for further analysis or reporting
 output_file <- "DESeq2_Result_of_WaldTest_Case_vs_Control.txt"
 write.table(res_wt_naomit, file=output_file, sep="\t", quote=F)
