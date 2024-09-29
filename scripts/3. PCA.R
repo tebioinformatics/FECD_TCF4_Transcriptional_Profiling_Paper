@@ -13,7 +13,7 @@ library(genefilter)  # For filtering genes based on expression levels
 library(ggplot2)     # For creating plots
 
 # Load expression data (TPM: Transcripts Per Million)
-tpm_file <- "DataMatrix_ImportSampleList_Case_vs_Control.txt" #(For exaple, 4 RE- and 6 RE+ in this case)
+tpm_file <- "DataMatrix_ImportSampleList_Case_vs_Control.txt" #(For example, 4 RE- and 6 RE+ in the paper)
 tpm_data <- read.table(tpm_file, sep = "\t", header = TRUE)
 
 # Extract TPM data (first 10 columns as gene expression levels for the samples)
