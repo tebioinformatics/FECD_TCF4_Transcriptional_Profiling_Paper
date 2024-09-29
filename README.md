@@ -60,7 +60,7 @@ Raw fastq files of CECs derived from non-FECD and FECD subjects were obtained fr
 If you use this code or data, please cite our paper:
 
 ```
-[Citation information]
+[Citation information will be updated soon]
 ```
 
 ---
