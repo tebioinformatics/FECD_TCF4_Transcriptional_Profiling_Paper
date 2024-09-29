@@ -1,322 +1,121 @@
 # GO enrichment analysis
 
-rm(list=ls()) # Clear all previous data
-dev.off() # Close windows if there are any issues
+# Clear all previous data and close any open graphical devices
+rm(list=ls()) # Remove all objects from the environment
+dev.off()     # Close all graphical devices
 
-##################### Load the data
-## Load the database
-path <- "/Users"
+# Load necessary libraries
+library(biomaRt)         # For accessing the Ensembl biomart database
+library(org.Hs.eg.db)    # Human gene annotation package
+library(DOSE)            # For semantic similarity calculation among GO terms
+library(ggplot2)         # For visualization
+library(clusterProfiler) # For functional enrichment analysis
+library(enrichplot)      # For enrichment plot visualization
+library(forcats)         # For factor reordering
+library(dplyr)           # Data manipulation
+library(scales)          # For scaling functions
+library(tidyverse)       # Collection of data science tools
 
-setwd(path)      # Change the working directory
-FileName <- "DESeq2_Result_of_WaldTest_RE-_vs_Control_20240829AT.txt"  # Specify the file name
+# Set working directory and load DESeq2 results
+working_directory <- "path/to/your/working/directory"
+setwd(working_directory)
 
-# Load the file data into data0
-data1 <- read.table(FileName, header=T, sep="\t", stringsAsFactors=F)
+# Load DESeq2 results of Wald Test (differential expression analysis)
+deseq2_filename <- "DESeq2_Result_of_WaldTest_Case_vs_Control.txt"
+deseq2_data <- read.table(deseq2_filename, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+ensembl_gene_id <- rownames(deseq2_data)
+deseq2_data <- data.frame(ensembl_gene_id, deseq2_data)
 
-head(data1)
-dim(data1)
+# Load expression level data (TPM) and filter genes with average expression >= 1
+tpm_filepath <- "/Users/"
+setwd(tpm_filepath)
+tpm_filename <- "DataMatrix_YYYYMMDD.txt"
+tpm_data <- read.table(tpm_filename, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+filtered_tpm_data <- tpm_data[rowMeans(tpm_data[,1:17]) >= 1,]
 
-ensembl_gene_id <- rownames(data1) # Get rownames
-data2 <- data.frame(ensembl_gene_id, data1)
-head(data2)
-dim(data2)
+# Filter significant genes based on adjusted p-value and log2FoldChange threshold
+significant_genes <- deseq2_data[rownames(deseq2_data) %in% rownames(filtered_tpm_data),]
+significant_genes <- significant_genes[significant_genes$padj < 0.05,]
+logfc_threshold <- 1.0
+upregulated_genes <- significant_genes[significant_genes$log2FoldChange > logfc_threshold,]
+downregulated_genes <- significant_genes[significant_genes$log2FoldChange < -logfc_threshold,]
 
-########## Extract differentially expressed genes ############
-# Expression level data
-path.tpm <- "/Users/"
-setwd(path.tpm)
+# Extract Ensembl gene IDs for further analysis
+upregulated_gene_ids <- upregulated_genes$ensembl_gene_id
+downregulated_gene_ids <- downregulated_genes$ensembl_gene_id
+all_regulated_gene_ids <- c(upregulated_gene_ids, downregulated_gene_ids)
 
-FileName.tpm <- "DataMatrix_ImportSampleList_FECD_vs_Control_20240912AT.txt"  
-data1.tpm <- read.table(FileName.tpm, header=T, sep="\t", stringsAsFactors=F)
-head(data1.tpm,3)
-
-data2.tpm <- data1.tpm[,1:17]
-dim(data2.tpm)
-head(data2.tpm,3)
-
-data3.tpm <- data2.tpm[rowMeans(data2.tpm) >= 1,] # Extract genes with average expression level of 1 or higher
-dim(data3.tpm)
-head(data3.tpm,3)
-
-
-data_expression <- data2[rownames(data2) %in% rownames(data3.tpm),] # Extract genes with an average expression level of 1 or higher & remove missing values
-head(data_expression,3)
-dim(data_expression)
-
-
-data_pvalue <- data_expression[data_expression$padj < 0.05, ] # Extract significant genes
-dim(data_pvalue)
-head(data_pvalue)
-
-th.lfc <- 1.0 # Set threshold
-upregulated   <- data_pvalue[data_pvalue$log2FoldChange > th.lfc, ]
-downregulated <- data_pvalue[data_pvalue$log2FoldChange < -th.lfc, ]  
-dim(upregulated)
-head(upregulated)
-dim(downregulated)
-
-
-upregulated.genes   <- c(upregulated$ensembl_gene_id) # Extract genes (ENTREZ) for analysis
-downregulated.genes <- c(downregulated$ensembl_gene_id)
-regulated.genes <- c(upregulated.genes,downregulated.genes)
-length(regulated.genes)
-
-non_regulated   <- data2[!(data2$padj < 0.05 & abs(data2$log2FoldChange) > th.lfc), ]
-dim(non_regulated)
-
-
-# Convert and obtain gene IDs
-#BiocManager::install("biomaRt")
-#packageVersion("biomaRt")
-library(biomaRt)
-
+# Use biomaRt to convert Ensembl gene IDs to Entrez IDs and other annotations
 mart <- useMart(biomart = "ensembl", dataset = "hsapiens_gene_ensembl")
-
-# upregulated
-up.conv <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","entrezgene_description","hgnc_symbol","chromosome_name","start_position","end_position","band","gene_biotype"),
-                 filters    = "ensembl_gene_id",
-                 values     = upregulated.genes, 
-                 mart       = mart)
-dim(up.conv)
-head(up.conv)
-
-# downregulated
-down.conv <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","entrezgene_description","hgnc_symbol","chromosome_name","start_position","end_position","band","gene_biotype"),
-                   filters    = "ensembl_gene_id",
-                   values     = downregulated.genes, 
-                   mart       = mart)
-dim(down.conv)
-head(down.conv)
-
-all.conv <- getBM(attributes = c("ensembl_gene_id","entrezgene_id","entrezgene_description","hgnc_symbol","chromosome_name","start_position","end_position","band","gene_biotype"),
-                   filters    = "ensembl_gene_id",
-                   values     = regulated.genes, 
-                   mart       = mart)
-dim(all.conv)
-head(all.conv)
-
-
-# Extract only protein_coding genes
-non_protein.up <- up.conv[up.conv$gene_biotype != "protein_coding",]
-dim(non_protein.up)
-protein.up <- up.conv[up.conv$gene_biotype == "protein_coding",]
-dim(protein.up)
-
-DEGs1.up.exNA <- na.omit(protein.up$entrezgene_id)
-length(DEGs1.up.exNA)
-
-
-non_protein.down <- down.conv[down.conv$gene_biotype != "protein_coding",]
-dim(non_protein.down)
-protein.down <- down.conv[down.conv$gene_biotype == "protein_coding",]
-dim(protein.down)
-DEGs1.down.exNA <- na.omit(protein.down$entrezgene_id)
-length(DEGs1.down.exNA)
-
-non_protein.all <- all.conv[all.conv$gene_biotype != "protein_coding",]
-dim(non_protein.all)
-protein.all <- all.conv[all.conv$gene_biotype == "protein_coding",]
-dim(protein.all)
-DEGs1.all.exNA <- na.omit(protein.all$entrezgene_id)
-length(DEGs1.all.exNA)
-
-
-
-### install library
-#BiocManager::install("ggplot2")
-library(org.Hs.eg.db)
-library(DOSE)
-library(ggplot2)
-packageVersion("ggplot2")
-packageVersion("org.Hs.eg.db")
-packageVersion("DOSE")
-
-#BiocManager::install("clusterProfiler") # install
-library(clusterProfiler)
-packageVersion("clusterProfiler")
-
-#BiocManager::install("enrichplot") # for gseaplot2
-library(enrichplot)
-packageVersion("enrichplot")
-
-### GO analysis (enrichGO)
-go.up <- enrichGO(c(protein.up$entrezgene_id),
-                  OrgDb = "org.Hs.eg.db",
-                  ont="all",   # all, BP, MF, CC
-                  readable = TRUE,
-                  pAdjustMethod = "BH",
-                  pvalueCutoff  = 0.5,
-                  qvalueCutoff  = 0.5)
-
-go.down <- enrichGO(DEGs1.down.exNA,
-                    OrgDb = "org.Hs.eg.db",
-                    ont="all",
-                    readable = TRUE,
-                    pAdjustMethod = "BH",
-                    pvalueCutoff  = 0.5,
-                    qvalueCutoff  = 0.5)
-
-go.all <- enrichGO(DEGs1.all.exNA,
-                    OrgDb = "org.Hs.eg.db",
-                    ont="all",
-                    readable = TRUE,
-                    pAdjustMethod = "BH",
-                    pvalueCutoff  = 0.5,
-                    qvalueCutoff  = 0.5)
-
-
-
-
-### Process the analysis results
-
-box0   <- as.data.frame(go.all)
-dim(box0)
-
-box1   <- box0[box0$p.adjust < 0.05,]
-dim(box1)
-
-
-num.BP.1 <- 8   # Number of terms to display for BP
-num.CC.1 <- 8
-num.MF.1 <- 8
-
-
-### Extract BP, CC, MF
-BP <- box1[box1$ONTOLOGY == "BP", ]
-BP01 <- BP[order(BP$p.adjust,BP$pvalue, decreasing = c(FALSE,FALSE)),]
-BP02 <- na.omit(BP01[c(1:num.BP.1),]); #必要な列を抽出
-dim(BP)
-head(BP02)
-
-CC <- box1[box1$ONTOLOGY == "CC", ]
-CC01 <- CC[order(CC$p.adjust,CC$pvalue, decreasing = c(FALSE,FALSE)),]
-CC02 <- na.omit(CC01[c(1:num.CC.1),]); #必要な列を抽出
-dim(CC)
-
-MF <- box1[box1$ONTOLOGY == "MF", ]
-MF01 <- MF[order(MF$p.adjust,MF$pvalue, decreasing = c(FALSE,FALSE)),]
-MF02 <- na.omit(MF01[c(1:num.MF.1),]); #必要な列を抽出
-dim(MF)
-
-# Create category boxes
-categ.BP <- matrix(1:num.BP.1, nrow=num.BP.1, ncol=1) #1×nの行列を作製する
-categ.BP[,1] <- "Biological Process"
-colnames(categ.BP) <- c("Category")
-
-categ.CC <- matrix(1:num.CC.1, nrow=num.CC.1, ncol=1) #1×nの行列を作製する
-categ.CC[,1] <- "Cellular Component"
-colnames(categ.CC) <- c("Category")
-
-categ.MF <- matrix(1:num.MF.1, nrow=num.MF.1, ncol=1) #1×nの行列を作製する
-categ.MF[,1] <- "Molecular Function"
-colnames(categ.MF) <- c("Category")
-
-
-# Combine the data
-BP03   <- cbind(categ.BP, BP02)
-CC03   <- cbind(categ.CC, CC02)
-MF03   <- cbind(categ.MF, MF02)
-
-
-GO.result <- as.data.frame(rbind(BP03, CC03, MF03))
-head(GO.result)
-
-
-
-#### Caluculate GeneRatio
-#install.packages("tidyverse")
-packageVersion("tidyverse")
-library(tidyverse)
-GeneRatio0 <- as.matrix(str_split_fixed(GO.result$GeneRatio, pattern = "/", n = 2))　# Split by "/"
-num.2 = nrow(GeneRatio0)
-
-GeneRatio.matrix <- matrix(1:num.2, nrow=num.2, ncol=1) #1×nの行列を作製する
-
-i =1
-
-for(i in 1:num.2) {
-  GeneRatio.matrix[i,1] <- (as.numeric(GeneRatio0[i,1])/as.numeric(GeneRatio0[i,2]))
+convert_genes <- function(gene_ids) {
+  getBM(attributes = c("ensembl_gene_id", "entrezgene_id", "entrezgene_description", 
+                       "hgnc_symbol", "chromosome_name", "start_position", "end_position", 
+                       "band", "gene_biotype"),
+        filters = "ensembl_gene_id", values = gene_ids, mart = mart)
 }
 
-GO.result01 <- as.data.frame(cbind(GO.result, GeneRatio.matrix))
+upregulated_converted <- convert_genes(upregulated_gene_ids)
+downregulated_converted <- convert_genes(downregulated_gene_ids)
+all_converted <- convert_genes(all_regulated_gene_ids)
 
+# Filter for protein-coding genes and remove missing values
+protein_coding_filter <- function(df) df[df$gene_biotype == "protein_coding",]
+upregulated_protein_coding <- protein_coding_filter(upregulated_converted)
+downregulated_protein_coding <- protein_coding_filter(downregulated_converted)
+all_protein_coding <- protein_coding_filter(all_converted)
 
-#### Convert text to uppercase
-box2 <- as.matrix(str_split_fixed(GO.result01$Description, pattern = "", n = 3))
-
-#install.packages("stringr")
-packageVersion("stringr")
-library(stringr)
-num.3 = nrow(box2)
-
-for(i in 1:num.3) {
-  if (box2[i,2] == "R") { # If "R" is part of "RNA", do nothing
-    
-  } else {
-    box2[i,1] <- toupper(box2[i,1]) # Convert to uppercase
-  }
-} 
-
-# Combine text
-for(i in 1:num.3) {
-  box2[i,1] <- paste(box2[i,1], box2[i,2], sep = "")
-  box2[i,1] <- paste(box2[i,1], box2[i,3], sep = "")
+# GO enrichment analysis using clusterProfiler
+go_enrich <- function(gene_ids) {
+  enrichGO(gene_ids, OrgDb = org.Hs.eg.db, ont = "all", readable = TRUE, 
+           pAdjustMethod = "BH", pvalueCutoff = 0.5, qvalueCutoff = 0.5)
 }
 
+go_results_up <- go_enrich(upregulated_protein_coding$entrezgene_id)
+go_results_down <- go_enrich(na.omit(downregulated_protein_coding$entrezgene_id))
+go_results_all <- go_enrich(na.omit(all_protein_coding$entrezgene_id))
 
-GO.result01$Description <- box2[,1]
-head(GO.result01)
+# Process and filter GO analysis results
+go_results_df <- as.data.frame(go_results_all)
+significant_go_results <- go_results_df[go_results_df$p.adjust < 0.05,]
 
-# Log-transform p.adjust
-GO.result02 <- GO.result01
-GO.result02$p.adjust <- -log10(GO.result01$p.adjust)
+# Extract specific terms for Biological Process (BP), Cellular Component (CC), and Molecular Function (MF)
+extract_top_terms <- function(go_df, ontology, top_n) {
+  ontology_df <- go_df[go_df$ONTOLOGY == ontology, ]
+  sorted_ontology_df <- ontology_df[order(ontology_df$p.adjust, ontology_df$pvalue),]
+  head(na.omit(sorted_ontology_df), top_n)
+}
 
+top_bp <- extract_top_terms(significant_go_results, "BP", 8)
+top_cc <- extract_top_terms(significant_go_results, "CC", 8)
+top_mf <- extract_top_terms(significant_go_results, "MF", 8)
 
-# Extract specific GO terms
-GO.result03 <- GO.result02
+# Combine top BP, CC, MF terms into one data frame
+combine_terms <- function(category_name, terms_df) {
+  category_col <- matrix(rep(category_name, nrow(terms_df)), ncol = 1)
+  colnames(category_col) <- "Category"
+  cbind(category_col, terms_df)
+}
 
+combined_go_results <- rbind(combine_terms("Biological Process", top_bp),
+                             combine_terms("Cellular Component", top_cc),
+                             combine_terms("Molecular Function", top_mf))
 
-setwd("/Users/shara/Library/CloudStorage/OneDrive-同志社大学/遺伝子解析班データファイル/RNA-Seqプロジェクト/Noexpansion vs Expansion/論文用 RE- vs+/v104/DU2022/GO解析/RIN/RE- vs Control")
-write.table(GO.result03, file="GO_analysis_downregulated_genes_RE-_vs_Control.txt", sep="\t", quote=F)
+# Save the results to a file
+output_directory <- "/path/to/your/output/directory"
+setwd(output_directory)
+write.table(combined_go_results, file = "GO_analysis_results.txt", sep = "\t", quote = FALSE)
 
-# load the library
-library(forcats)
-library(dplyr)
-library(scales)
-packageVersion("forcats")
-packageVersion("dplyr")
-packageVersion("scales")
+# Visualization of GO enrichment results using ggplot2
+plot <- ggplot(combined_go_results, aes(x = -log10(p.adjust), y = reorder(Description, -log10(p.adjust)), fill = -log10(p.adjust))) +
+  geom_bar(stat = "identity", width = 0.6, color = "black") +
+  facet_grid(Category ~ ., scales = "free") +
+  theme_bw() +
+  theme(axis.text.x = element_text(size = 15),
+        axis.text.y = element_text(size = 10),
+        panel.border = element_rect(color = "black", size = 1.5),
+        panel.grid = element_line(size = 0.1, linetype = "dotted"),
+        strip.text = element_text(size = 13))
 
-
-
-### Visualization
-plot <- ggplot(GO.result03, aes(x=p.adjust , y= reorder(Description,p.adjust),fill=p.adjust))+  # Reverse order by placing "-" before GeneRatio
-  #geom_point()+
-  geom_bar(stat = "identity", width = 0.6, color = "black", fill="#67A9CF",size = 0.6)+ # Specify bar width
-  
-  facet_grid(Category~., scale="free")+
-  
-  theme_bw()+ # white background and gray grid lines，テーマを先に指定してからフォントと色を変更する
-  
-  labs(x="")+
-  labs(y="")+
-  
-  theme(  axis.text.x = element_text(family = "Arial", color = "black", size=15),  # Axis label font size
-          axis.text.y = element_text(family = "Arial", color = "black", size=10), 
-          axis.title = element_text(family = "Arial", color = "black", size=10), # Axis text font size
-          legend.title = element_text(family = "Arial", color = "black", size=10),
-          panel.border = element_rect(colour = "black", fill = NA, size = 1.5), # Black border around the plot area.
-          panel.grid = element_line(size=0.1, colour = "black", linetype = "dotted"), # dotted, solid, blank, dashed
-          strip.text = element_text(family = "Arial", color = "black", size = 13),
-          aspect.ratio = 1.8 # アスペクト比
-  )
-plot 
-
-ggsave(filename = "DU2022_RE-_vs_Control_RIN_ver_Down.png", 
-       plot = plot, 
-       device = "png", 
-       scale = 1, 
-       width = 10, height = 8, 
-       units = c("in"),
-       dpi = 900)
-
+# Save the plot
+ggsave(filename = "GO_enrichment_plot.png", plot = plot, device = "png", 
+       width = 10, height = 8, dpi = 900)
