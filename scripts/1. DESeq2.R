@@ -29,7 +29,7 @@ names(files) <- s2c$sample
 # Load expression data (analysis at gene-level)
 txi <- tximport(files, type="rsem", txIn=F, txOut=F)
 dim(as.data.frame(txi))
-output_matrix_file <- "DataMatrix_YYYYMMDD.txt"
+output_matrix_file <- "DataMatrix_ImportSampleList_Case_vs_Control.txt"
 write.table(txi, file=output_matrix_file, sep="\t", quote=F)
 
 # Replace length=0 with 1
